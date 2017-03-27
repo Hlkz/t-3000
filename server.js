@@ -104,8 +104,10 @@ io.on('connection', function (socket) {
       state = Math.floor(Math.random()*Room.maxNumber)+1
     if (state > -1 && state <= Room.maxNumber && (Room.enableOverwrite || !Room.stateTimeout)) {
       // console.log('Post received:', (instant?'':'not ')+'instant')
-      if (instant > 0)
+      if (instant > 0) {
+        clearTimeout(Room.stateTimeout)
         setState(Room, state)
+      }
       else {
         socket.emit('confirm', { html: GenHTML(Room, state), wait: Room.waitingTime })
         SetState(Room, state)
