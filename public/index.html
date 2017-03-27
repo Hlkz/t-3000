@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>telepathy-3000</title>
+    <script src="https://unpkg.com/babel-standalone@6.15.0/babel.min.js"></script>
+    <script src="https://unpkg.com/jquery@3.1.0/dist/jquery.min.js"></script>
+    <script src="https://unpkg.com/remarkable@1.6.2/dist/remarkable.min.js"></script>
+    <script src="socket.io.js"></script>
+    <script type="text/babel" src="script.js"></script>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body style="height:100%; margin:0">
+    <div id="main"></div>
+    <div id="second"></div>
+    <div id="count"></div>
+    <div id="panel">
+      MaxNumber
+      <input id='input_maxNumber', type='text'>
+      <button onclick='SendMaxNumber()'>Send</button>
+      WaitingTime
+      <input id='input_waitingTime', type='text'>
+      <button onclick='SendWaitingTime()'>Send</button>
+      WaitingTime2
+      <input id='input_waitingTime2', type='text'>
+      <button onclick='SendWaitingTime2()'>Send</button>
+      <button id='button_enableOverwrite', onclick='ToggleEnableOverwrite()'>ToggleEnableOverwrite</button>
+    </div>
+    <div id='topright'></div>
+  </body>
+</html>
