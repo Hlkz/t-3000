@@ -50,6 +50,7 @@ function GenHTML(Room, forceState=null) {
     case 1: return '<div class="txt">'+state+'</div>' // Number
     case 2: return '<div class="txt">'+(state>1?'Non':'Oui')+'</div>' // Yes/No
     case 3: return '<img class="img" src="./symbol/'+cartes[state-1]+'">' // Zener
+    case 4: return '<div class="txt">'+'0abcdefghijklmnopqrstuvwxyz'[state]+'</div>'
   }
 }
 
@@ -58,6 +59,7 @@ function SetMode(Room, mode, maxNumber = null) {
   if (mode === 1) Room.maxNumber = maxNumber || 10
   else if (mode === 2) Room.maxNumber = 2
   else if (mode === 3) Room.maxNumber = 5
+  else if (mode === 4) Room.maxNumber = 26
   // console.log('Mode change:', mode)
   io.to(Room.room).emit('mode', { mode: GetMode(Room) })
 }
@@ -121,7 +123,7 @@ io.on('connection', function (socket) {
     SetState(Room, 0)
   })
   socket.on('mode', function (data) {
-    if (data.mode > 0 && data.mode < 4)
+    if (data.mode > 0 && data.mode < 5)
       SetMode(Room, data.mode)
   })
   socket.on('maxNumber', function (data) {

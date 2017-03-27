@@ -46,7 +46,7 @@ let keyEventListener =  event => {
     SendState()
   else if (key > 47 && key < Math.max(58, 49+MAX_NUMBER)) // 123456789
     SendState(key-48)
-  else if (key > 96 && key < 100) // NumPad 123
+  else if (key > 96 && key < 101) // NumPad 1234
     SendMode(key-96)
   else if (key == 107)
     SendWait()
