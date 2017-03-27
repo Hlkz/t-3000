@@ -1,28 +1,22 @@
-var fs = require('fs')
-var path = require('path')
-var bodyParser = require('body-parser')
-
-var express = require('express')
-var app = express()
-var server = require('http').createServer(app)
-var io = require('socket.io')(server)
-
-let config = require('./config')
-const SERVER_PORT = config.port
+let express = require('express')
+let app = express()
+let bodyParser = require('body-parser')
+let server = require('http').createServer(app)
+let io = require('socket.io')(server)
 
 let ROOMs = {}
 
+let config = require('./config')
+const SERVER_PORT = config.port
 app.set('port', SERVER_PORT)
-app.use('/', express.static(path.join(__dirname, 'public')))
+app.use('/', express.static(__dirname+'/public'))
 app.use(bodyParser.json())
 app.use(bodyParser.urlencoded({extended: true}))
-
 app.use(function(req, res, next) {
   res.setHeader('Access-Control-Allow-Origin', '*')
   res.setHeader('Cache-Control', 'no-cache')
   next()
 })
-
 app.get('/*', function(req,res) {
   res.sendFile(__dirname+'/public/index.html');
 })
@@ -109,7 +103,7 @@ io.on('connection', function (socket) {
     if (state == null)
       state = Math.floor(Math.random()*Room.maxNumber)+1
     if (state > -1 && state <= Room.maxNumber && (Room.enableOverwrite || !Room.stateTimeout)) {
-      console.log('Post received:', (instant?'':'not ')+'instant')
+      // console.log('Post received:', (instant?'':'not ')+'instant')
       if (instant > 0)
         setState(Room, state)
       else {
@@ -145,5 +139,5 @@ io.on('connection', function (socket) {
 })
 
 server.listen(SERVER_PORT, function() {
-  console.log('Server up: http://localhost:' + SERVER_PORT + '/')
+  console.log('Server up! (port '+SERVER_PORT+')')
 })
