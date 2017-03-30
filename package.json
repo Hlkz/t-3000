@@ -13,8 +13,8 @@
   },
   "devDependencies": {},
   "scripts": {
-    "start": "nodemon server.js -e js",
-    "build": "babel server.js --out-file build.js --presets es2015",
-    "server": "node build.js"
+    "start": "nodemon core/server.js -e js",
+    "build": "babel core -d build --presets es2015",
+    "server": "node build/server.js"
   }
 }

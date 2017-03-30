@@ -63,7 +63,12 @@ let clickListener = event => {
 document.addEventListener('keydown', keyEventListener, true)
 document.getElementById('topright').addEventListener('click', clickListener, false)
 
-function Beep() { new Audio('/jingle.mp3').play() }
+function Beep() {
+  let audio = document.getElementById('audioFile')
+  audio.load()
+  audio.play()
+  // new Audio('/jingle.mp3').play() *
+}
 
 function TogglePanel() {
   if (IsShown('panel'))

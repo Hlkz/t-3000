@@ -3,13 +3,16 @@ let app = express()
 let bodyParser = require('body-parser')
 let server = require('http').createServer(app)
 let io = require('socket.io')(server)
+let path = require('path')
 
 let ROOMs = {}
 
-let config = require('./config')
+let ROOT = __dirname+'/../'
+
+let config = require('../config')
 const SERVER_PORT = config.port
 app.set('port', SERVER_PORT)
-app.use('/', express.static(__dirname+'/public'))
+app.use('/data', express.static(ROOT+'data'))
 app.use(bodyParser.json())
 app.use(bodyParser.urlencoded({extended: true}))
 app.use(function(req, res, next) {
@@ -17,8 +20,8 @@ app.use(function(req, res, next) {
   res.setHeader('Cache-Control', 'no-cache')
   next()
 })
-app.get('/*', function(req,res) {
-  res.sendFile(__dirname+'/public/index.html');
+app.get('/*', function(req, res) {
+  res.sendFile(path.resolve(ROOT+'data/index.html'))
 })
 
 function CreateRoom(room) {
