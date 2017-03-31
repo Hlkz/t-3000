@@ -2,7 +2,6 @@ let express = require('express')
 let app = express()
 let bodyParser = require('body-parser')
 let server = require('http').createServer(app)
-let io = require('socket.io')(server)
 let path = require('path')
 let config = require('../config')
 
@@ -11,7 +10,9 @@ let ROOMs = {}
 const ROOT = __dirname+'/../'
 const SERVER_PORT = config.port
 const PATH_NAME = config.pathname
+const IO_PATH = PATH_NAME.length ? PATH_NAME+'/socket.io' : '/socket.io'
 const DATA_URL = PATH_NAME.length ? PATH_NAME+'/data' : '/data'
+let io = require('socket.io')(server, { path: IO_PATH })
 app.set('port', SERVER_PORT)
 app.use(PATH_NAME+'/data', express.static(ROOT+'data'))
 app.use(bodyParser.json())
@@ -23,7 +24,7 @@ app.use(function(req, res, next) {
   next()
 })
 app.get(PATH_NAME+'/*', function(req, res) {
-  res.render(ROOT+'data/index', { pathName: PATH_NAME, dataUrl: DATA_URL })
+  res.render(ROOT+'data/index', { ioPath: IO_PATH, dataUrl: DATA_URL })
 })
 app.get(PATH_NAME, function(req, res) {
   res.redirect(PATH_NAME+'/')
