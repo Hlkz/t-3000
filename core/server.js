@@ -4,12 +4,12 @@ let bodyParser = require('body-parser')
 let server = require('http').createServer(app)
 let io = require('socket.io')(server)
 let path = require('path')
+let config = require('../config')
 
 let ROOMs = {}
 
 let ROOT = __dirname+'/../'
 
-let config = require('../config')
 const SERVER_PORT = config.port
 app.set('port', SERVER_PORT)
 app.use('/data', express.static(ROOT+'data'))
@@ -47,7 +47,7 @@ function GenHTML(Room, forceState=null) {
     case 1: return '<div class="txt">'+state+'</div>' // Number
     case 2: return '<div class="txt">'+(state>1?'Non':'Oui')+'</div>' // Yes/No
     case 3: return '<img class="img" src="./symbol/'+cartes[state-1]+'">' // Zener
-    case 4: return '<div class="txt">'+'0abcdefghijklmnopqrstuvwxyz'[state]+'</div>'
+    case 4: return '<div class="txt">'+'0ABCDEFGHIJKLMNOPQRSTUVWXYZ'[state]+'</div>'
   }
 }
 
@@ -94,12 +94,17 @@ function SetState(Room, state) {
 }
 
 io.on('connection', function (socket) {
-  let room = socket.handshake['query']['r_var'];
+  let room = socket.handshake['query']['r_var']
+  if (!room.startsWith(config.pathname))
+    return
+  room = room.slice(config.pathname.length)
   if (!ROOMs[room])
     CreateRoom(room)
+
   let Room = ROOMs[room]
-  socket.join(room);
+  socket.join(room)
   socket.emit('init', { html: GenHTML(Room), mode: GetMode(Room), conf: GetConf(Room) })
+
   socket.on('state', function (data) {
     let state = data.state
     let instant = data.instant
