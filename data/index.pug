@@ -1,0 +1,29 @@
+doctype html
+html
+  head
+    meta(charset='utf-8')
+    title telepathy-3000
+    script(src='https://unpkg.com/babel-standalone@6.15.0/babel.min.js')
+    script(src='https://unpkg.com/jquery@3.1.0/dist/jquery.min.js')
+    script(src='https://unpkg.com/remarkable@1.6.2/dist/remarkable.min.js')
+    script(src=dataUrl+'/socket.io.js')
+    script(type='text/babel', src=dataUrl+'/script.js')
+    link(rel='stylesheet', href=dataUrl+'/style.css')
+  body(style='height:100%; margin:0')
+    #main
+    #second
+    #count
+    #panel
+      | MaxNumber 
+      input#input_maxNumber(,='', type='text')
+      button(onclick='SendMaxNumber()') Send
+      | WaitingTime 
+      input#input_waitingTime(,='', type='text')
+      button(onclick='SendWaitingTime()') Send
+      | WaitingTime2 
+      input#input_waitingTime2(,='', type='text')
+      button(onclick='SendWaitingTime2()') Send
+      button#button_enableOverwrite(,='', onclick='ToggleEnableOverwrite()') ToggleEnableOverwrite
+    #topright
+    audio#audioFile
+      source(src=dataUrl+'/jingle.mp3', type='audio/mpeg')

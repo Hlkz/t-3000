@@ -8,20 +8,25 @@ let config = require('../config')
 
 let ROOMs = {}
 
-let ROOT = __dirname+'/../'
-
+const ROOT = __dirname+'/../'
 const SERVER_PORT = config.port
+const PATH_NAME = config.pathname
+const DATA_URL = PATH_NAME.length ? PATH_NAME+'/data' : '/data'
 app.set('port', SERVER_PORT)
-app.use('/data', express.static(ROOT+'data'))
+app.use(PATH_NAME+'/data', express.static(ROOT+'data'))
 app.use(bodyParser.json())
 app.use(bodyParser.urlencoded({extended: true}))
+app.set('view engine', 'pug')
 app.use(function(req, res, next) {
   res.setHeader('Access-Control-Allow-Origin', '*')
   res.setHeader('Cache-Control', 'no-cache')
   next()
 })
-app.get('/*', function(req, res) {
-  res.sendFile(path.resolve(ROOT+'data/index.html'))
+app.get(PATH_NAME+'/*', function(req, res) {
+  res.render(ROOT+'data/index', { dataUrl: DATA_URL })
+})
+app.get(PATH_NAME, function(req, res) {
+  res.redirect(PATH_NAME+'/')
 })
 
 function CreateRoom(room) {
@@ -46,7 +51,7 @@ function GenHTML(Room, forceState=null) {
     default:
     case 1: return '<div class="txt">'+state+'</div>' // Number
     case 2: return '<div class="txt">'+(state>1?'Non':'Oui')+'</div>' // Yes/No
-    case 3: return '<img class="img" src="/data/symbol/'+cartes[state-1]+'">' // Zener
+    case 3: return '<img class="img" src="'+DATA_URL+'/symbol/'+cartes[state-1]+'">' // Zener
     case 4: return '<div class="txt">'+'0ABCDEFGHIJKLMNOPQRSTUVWXYZ'[state]+'</div>'
   }
 }

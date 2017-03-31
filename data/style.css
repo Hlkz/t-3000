@@ -64,3 +64,7 @@ html {
 input {
   width: 60px;
 }
+
+button {
+  margin: 0 2px 0 2px;
+}
