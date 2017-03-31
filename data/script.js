@@ -44,8 +44,10 @@ let keyEventListener =  event => {
   if (!ALLOW_CMD) return
   if (key == 13 || key == 32) // Enter Space
     SendState()
-  else if (key > 47 && key < Math.max(58, 49+MAX_NUMBER)) // 123456789
+  else if (key > 47 && key < Math.min(58, 49+MAX_NUMBER)) // 123456789
     SendState(key-48)
+  else if (key > 64 && key < Math.min(91, 65+MAX_NUMBER)) // alphabet
+    SendState(key-64)
   else if (key > 96 && key < 101) // NumPad 1234
     SendMode(key-96)
   else if (key == 107)
@@ -67,7 +69,7 @@ function Beep() {
   let audio = document.getElementById('audioFile')
   audio.load()
   audio.play()
-  // new Audio('/jingle.mp3').play() *
+  // new Audio('/jingle.mp3').play()
 }
 
 function TogglePanel() {

@@ -46,7 +46,7 @@ function GenHTML(Room, forceState=null) {
     default:
     case 1: return '<div class="txt">'+state+'</div>' // Number
     case 2: return '<div class="txt">'+(state>1?'Non':'Oui')+'</div>' // Yes/No
-    case 3: return '<img class="img" src="./symbol/'+cartes[state-1]+'">' // Zener
+    case 3: return '<img class="img" src="/data/symbol/'+cartes[state-1]+'">' // Zener
     case 4: return '<div class="txt">'+'0ABCDEFGHIJKLMNOPQRSTUVWXYZ'[state]+'</div>'
   }
 }
