@@ -1,4 +1,5 @@
-var socket = io('/', { query: 'r_var='+window.location.pathname })
+// console.log(document.getElementById('pathName').getAttribute('value'))
+var socket = io("", { query: 'r_var='+window.location.pathname })
 
 // conf
 let ALLOW_CMD_DELAY = 500 // ms

@@ -23,7 +23,7 @@ app.use(function(req, res, next) {
   next()
 })
 app.get(PATH_NAME+'/*', function(req, res) {
-  res.render(ROOT+'data/index', { dataUrl: DATA_URL })
+  res.render(ROOT+'data/index', { pathName: PATH_NAME, dataUrl: DATA_URL })
 })
 app.get(PATH_NAME, function(req, res) {
   res.redirect(PATH_NAME+'/')
