@@ -115,11 +115,11 @@ function SetConf(conf) {
   document.getElementById('button_enableOverwrite').innerHTML = ENABLE_OVERWRITE ? 'Overwrite: on' : 'Overwrite: off'
 }
 
-function SendState(state) {
-  socket.emit('state', { state, instant: state==null?0:1 })
+function SendState(state = -1) {
+  socket.emit('packet', { now: { state }, next: { bell: true, delay: 1 } })
 }
 function SendWait() {
-  socket.emit('wait')
+  socket.emit('packet', { now: { state: 0 }, next: { bell: true, delay: 2 } })
 }
 function SendMode(mode) {
   socket.emit('mode', { mode })
@@ -137,16 +137,28 @@ function SendEnableOverwrite(enableOverwrite) {
   socket.emit('enableOverwrite', { enableOverwrite })
 }
 
-socket.on('state', function(data) {
-  renderMain(data.html)
-  if (data.state > 0)
-    clearTimeout(stateTimeout)
-  if (data.release && !isSecondShown() || data.state > 0)
+// socket.on('state', function(data) {
+//   renderMain(data.html)
+//   if (data.state > 0)
+//     clearTimeout(stateTimeout)
+//   if (data.release && !isSecondShown() || data.state > 0)
+//     Beep()
+//   if ((data.release || data.state > 0) && isSecondShown()) {
+//     hideSecond()
+//     hideCount()
+//   }
+// })
+
+socket.on('node', data => {
+  //console.log(data)
+  if (data.html)
+    renderMain(data.html)
+  if (data.html2)
+    renderSecond(data.html2)
+  if (data.bell)
     Beep()
-  if ((data.release || data.state > 0) && isSecondShown()) {
-    hideSecond()
-    hideCount()
-  }
+  if (data.delay)
+    Wait(data.delay)
 })
 
 socket.on('init', data => {

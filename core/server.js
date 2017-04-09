@@ -59,6 +59,8 @@ function GenHTML(Room, forceState=null) {
   }
 }
 
+function isEmpty(obj) { return Object.keys(obj).length === 0 && obj.constructor === Object }
+
 function SetMode(Room, mode, maxNumber = null) {
   Room.mode = mode
   if (mode === 1) Room.maxNumber = maxNumber || 10
@@ -90,15 +92,43 @@ function SendConf(Room) {
   io.to(Room.room).emit('conf', { conf: GetConf(Room) })
 }
 
-function setState(Room, state, release=false) {
-  Room.state = state
-  // console.log('State change:', state)
-  io.to(Room.room).emit('state', { state, html: GenHTML(Room), release })
-}
-function SetState(Room, state) {
-  setState(Room, 0)
+function treatPacket(Room, node, sender) {
+  if (!node || (!Room.enableOverwrite && Room.stateTimeout))
+    return
+  let state = node.state
+  if (state != null && (state < -1 || state > Room.maxNumber))
+    return
+
   clearTimeout(Room.stateTimeout)
-  Room.stateTimeout =  setTimeout(()=>{ setState(Room, state, true); Room.stateTimeout = null }, state ? Room.waitingTime : Room.waitingTime2)
+
+  let bell = node.bell
+  let delay = node.delay || 0
+  let packet = {}
+  if (state === -1)
+    state = Math.floor(Math.random()*Room.maxNumber)+1
+  if (state != null)
+    packet.html = GenHTML(Room, state)
+  if (bell)
+    packet.bell = true
+
+  if (!isEmpty(packet)) {
+    function exec() {
+      if (state != null)
+        Room.state = state
+      io.to(Room.room).emit('node', packet)
+    }
+    if (!delay)
+      exec()
+    else {
+      delay = delay == 1 ? Room.waitingTime : Room.waitingTime2
+      let packet2 = { delay }
+      if (state != null && state != Room.state)
+        packet2.html = packet.html
+      io.to(sender).emit('node', packet2)
+      Room.stateTimeout = setTimeout(() => { exec()
+        Room.stateTimeout = null }, delay)
+    }
+  }
 }
 
 io.on('connection', function (socket) {
@@ -113,49 +143,32 @@ io.on('connection', function (socket) {
   socket.join(room)
   socket.emit('init', { html: GenHTML(Room), mode: GetMode(Room), conf: GetConf(Room) })
 
-  socket.on('state', function (data) {
-    let state = data.state
-    let instant = data.instant
-    if (state == null)
-      state = Math.floor(Math.random()*Room.maxNumber)+1
-    if (state > -1 && state <= Room.maxNumber && (Room.enableOverwrite || !Room.stateTimeout)) {
-      // console.log('Post received:', (instant?'':'not ')+'instant')
-      if (instant > 0) {
-        clearTimeout(Room.stateTimeout)
-        setState(Room, state)
-      }
-      else {
-        socket.emit('confirm', { html: GenHTML(Room, state), wait: Room.waitingTime })
-        SetState(Room, state)
-      }
-    }
+  socket.on('packet', data => {
+    treatPacket(Room, data.now, socket.id)
+    treatPacket(Room, data.next, socket.id)
   })
-  socket.on('wait', function (data) {
-    socket.emit('confirm', { html: GenHTML(Room), wait: Room.waitingTime2 })
-    SetState(Room, 0)
-  })
-  socket.on('mode', function (data) {
+  socket.on('mode', data => {
     if (data.mode > 0 && data.mode < 5)
       SetMode(Room, data.mode)
   })
-  socket.on('maxNumber', function (data) {
+  socket.on('maxNumber', data => {
     Room.maxNumber = data.maxNumber
     SendConf(Room)
   })
-  socket.on('waitingTime', function (data) {
+  socket.on('waitingTime', data => {
     Room.waitingTime = data.waitingTime
     SendConf(Room)
   })
-  socket.on('waitingTime2', function (data) {
+  socket.on('waitingTime2', data => {
     Room.waitingTime2 = data.waitingTime2
     SendConf(Room)
   })
-  socket.on('enableOverwrite', function (data) {
+  socket.on('enableOverwrite', data => {
     Room.enableOverwrite = data.enableOverwrite
     SendConf(Room)
   })
 })
 
-server.listen(SERVER_PORT, function() {
+server.listen(SERVER_PORT, () => {
   console.log('Server up! (port '+SERVER_PORT+')')
 })
