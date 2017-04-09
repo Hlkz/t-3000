@@ -97,6 +97,11 @@ function Wait(time) {
     hideCount()
 }
 
+function clearCount() {
+  hideCount()
+  clearTimeout(stateTimeout)
+}
+
 function SetMode(mode) {
   MAX_NUMBER = mode.maxNumber
   document.getElementById('input_maxNumber').value = MAX_NUMBER
@@ -116,7 +121,10 @@ function SetConf(conf) {
 }
 
 function SendState(state = -1) {
-  socket.emit('packet', { now: { state }, next: { bell: true, delay: 1 } })
+  if (state == -1)
+    socket.emit('packet', { now: { state }, next: { bell: true, delay: 1 } })
+  else
+    socket.emit('packet', { now: { state, bell: true } })
 }
 function SendWait() {
   socket.emit('packet', { now: { state: 0 }, next: { bell: true, delay: 2 } })
@@ -137,20 +145,7 @@ function SendEnableOverwrite(enableOverwrite) {
   socket.emit('enableOverwrite', { enableOverwrite })
 }
 
-// socket.on('state', function(data) {
-//   renderMain(data.html)
-//   if (data.state > 0)
-//     clearTimeout(stateTimeout)
-//   if (data.release && !isSecondShown() || data.state > 0)
-//     Beep()
-//   if ((data.release || data.state > 0) && isSecondShown()) {
-//     hideSecond()
-//     hideCount()
-//   }
-// })
-
 socket.on('node', data => {
-  //console.log(data)
   if (data.html)
     renderMain(data.html)
   if (data.html2)
@@ -159,6 +154,8 @@ socket.on('node', data => {
     Beep()
   if (data.delay)
     Wait(data.delay)
+  else
+    clearCount()
 })
 
 socket.on('init', data => {
