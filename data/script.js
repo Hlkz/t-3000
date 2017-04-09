@@ -171,8 +171,3 @@ socket.on('mode', data => {
 socket.on('conf', data => {
   SetConf(data.conf)
 })
-
-socket.on('confirm', data => {
-  renderSecond(data.html)
-  Wait(data.wait)
-})
