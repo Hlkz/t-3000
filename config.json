@@ -1,4 +1,4 @@
 {
-  "port": 3003,
-  "pathname": "/telepathy-3000"
+  "port": 80,
+  "pathname": "/t3000"
 }

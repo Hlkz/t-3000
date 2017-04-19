@@ -3,7 +3,7 @@ let app = express()
 let bodyParser = require('body-parser')
 let server = require('http').createServer(app)
 let path = require('path')
-let config = require('../config')
+let config = require('../config/config')
 
 let ROOM = {} // Room prototype
 let ROOMs = {} // Rooms by id
