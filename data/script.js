@@ -43,6 +43,14 @@ let hideTimeout = () => { HideDiv('timeout') }
 let renderCount = h => { ShowDiv('count', h) }
 let hideCount = () => { HideDiv('count') }
 
+function Beep(id) {
+  let audio = document.getElementById(id)
+  audio.load()
+  audio.play()
+}
+function Bell() { Beep('audioFile') }
+function Bol() { Beep('audioFile2') }
+
 let keyEventListener =  event => {
   if (!Conf) return
   var key = event.keyCode
@@ -87,14 +95,6 @@ let clickListener = event => {
 }
 document.addEventListener('keydown', keyEventListener, true)
 document.getElementById('topright').addEventListener('click', clickListener, false)
-
-function Beep() {
-  let audio = document.getElementById('audioFile')
-  audio.pause()
-  //audio.load()
-  audio.play()
-  // new Audio('/jingle.mp3').play()
-}
 
 function TogglePanel() {
   if (IsShown('panel'))
@@ -159,11 +159,11 @@ function SetGM(isgm) {
 
 function SendState(state = -1) {
   if (state == -1)
-    socket.emit('packet', { now: { state }, next: { bell: true, delay: 1 } })
+    socket.emit('packet', { now: { state, bol: state !== 0 }, next: { bell: true, delay: 1 } })
   else
-    socket.emit('packet', { now: { state, bell: true } })
+    socket.emit('packet', { now: { state, bol: state !== 0, bell: false } })
 }
-let SendWait = () => socket.emit('packet', { now: { state: 0 }, next: { bell: true, delay: 2 } })
+let SendWait = () => socket.emit('packet', { now: { state: 0 }, next: { delay: 2 } })
 let SendMode = mode => socket.emit('mode', { mode })
 let SendMaxNumber = () => socket.emit('maxNumber', { maxNumber: document.getElementById('input_maxNumber').value })
 let SendWaitingTime = () => socket.emit('waitingTime', { waitingTime: document.getElementById('input_waitingTime').value })
@@ -178,7 +178,7 @@ let SendGetGM = () => { if (!isGM) socket.emit('getGM'); else SendDropGM() }
 let SendDropGM = () => { if (isGM) socket.emit('dropGM') }
 
 socket.on('node', data => {
-  console.log(data)
+  //console.log(data)
   if (data.html)
     renderMain(data.html)
   if (data.html2) {
@@ -197,7 +197,9 @@ socket.on('node', data => {
     else renderCount(data.count)
   }
   if (data.bell)
-    Beep()
+    Bell()
+  if (data.bol)
+    Bol()
   if (data.delay)
     Wait(data.delay)
   else
