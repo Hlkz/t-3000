@@ -5,7 +5,9 @@ let server = require('http').createServer(app)
 let path = require('path')
 let config = require('../config')
 
-let ROOMs = {}
+let ROOM = {} // Room prototype
+let ROOMs = {} // Rooms by id
+let hide = 'hide'
 
 const ROOT = __dirname+'/../'
 const SERVER_PORT = config.port
@@ -30,101 +32,162 @@ app.get(PATH_NAME, function(req, res) {
   res.redirect(PATH_NAME+'/')
 })
 
+function isEmpty(obj) { return Object.keys(obj).length === 0 && obj.constructor === Object }
+
 function CreateRoom(room) {
   ROOMs[room] = {
     room,
     state: 0,
+    realState: 0,
     stateTimeout: null,
     mode: 2,
     maxNumber: 2,
     waitingTime: 20000,
     waitingTime2: 10000,
-    enableOverwrite: false
+    enableOverwrite: false,
+    sendFake: false,
+    doubleBlind: false,
+    count: 0,
+    randomize: false,
+    GM: null,
+    enableOverwriteGM: false,
   }
+  Object.setPrototypeOf(ROOMs[room], ROOM)
+}
+
+ROOM.getSocketIds = function() { return Object.keys(io.sockets.adapter.rooms[this.room].sockets) }
+
+ROOM.isGM = function() { return socket => !this.GM || this.GM === socket.id }
+
+ROOM.SetGM = function(id) {
+  // id can be null
+  this.GM = id
+  this.getSocketIds().forEach(id => io.to(id).emit('gm', { isGM: this.GM === id }))
+  this.SendConf()
 }
 
 const cartes = [ 'Zener_Cercle.jpg', 'Zener_Croix.jpg', 'Zener_Vague.jpg', 'Zener_Carre.jpg', 'Zener_Etoile.jpg' ]
-function GenHTML(Room, forceState=null) {
-  let state = forceState || Room.state
+ROOM.GenHTML = function(forceState=null) {
+  let state = forceState != null ? forceState : this.state
   if (state < 1)
     return '<div class="txt">TRANSITION</div>'
-  switch(Room.mode) {
+  switch(this.mode) {
     default:
     case 1: return '<div class="txt">'+state+'</div>' // Number
     case 2: return '<div class="txt">'+(state>1?'Non':'Oui')+'</div>' // Yes/No
     case 3: return '<img class="img" src="'+DATA_URL+'/symbol/'+cartes[state-1]+'">' // Zener
-    case 4: return '<div class="txt">'+'0ABCDEFGHIJKLMNOPQRSTUVWXYZ'[state]+'</div>'
+    case 4: return '<div class="txt">'+'0ABCDEFGHIJKLMNOPQRSTUVWXYZ'[state]+'</div>' // Letter
   }
 }
 
-function isEmpty(obj) { return Object.keys(obj).length === 0 && obj.constructor === Object }
+ROOM.GenString = function(forceState=null) {
+  let state = forceState != null ? forceState : this.state
+  if (state < 1)
+    return 'Transition'
+  switch(this.mode) {
+    default:
+    case 1: return state // Number
+    case 2: return state>1?'Non':'Oui' // Yes/No
+    case 3: return cartes[state-1] // Zener
+    case 4: return '0ABCDEFGHIJKLMNOPQRSTUVWXYZ'[state] // Letter
+  }
+}
 
-function SetMode(Room, mode, maxNumber = null) {
-  Room.mode = mode
-  if (mode === 1) Room.maxNumber = maxNumber || 10
-  else if (mode === 2) Room.maxNumber = 2
-  else if (mode === 3) Room.maxNumber = 5
-  else if (mode === 4) Room.maxNumber = 26
+ROOM.SetMode = function(mode, maxNumber = null) {
+  this.mode = mode
+  if (mode === 1) this.maxNumber = maxNumber || 10
+  else if (mode === 2) this.maxNumber = 2
+  else if (mode === 3) this.maxNumber = 5
+  else if (mode === 4) this.maxNumber = 26
   // console.log('Mode change:', mode)
-  io.to(Room.room).emit('mode', { mode: GetMode(Room) })
+  io.to(this.room).emit('mode', { mode: this.GetMode() })
 }
 
-function GetMode(Room) {
+ROOM.GetMode = function() {
   return {
-    maxNumber: Room.maxNumber,
-    background: Room.mode ===3 ? 'white' : 'black',
-    color: Room.mode === 3 ? 'black' : 'white'
+    maxNumber: this.maxNumber,
+    background: this.mode ===3 ? 'white' : 'black',
+    color: this.mode === 3 ? 'black' : 'white'
   }
 }
 
-function GetConf(Room) {
+ROOM.GetConf = function() {
   return {
-    maxNumber: Room.maxNumber,
-    waitingTime: Room.waitingTime,
-    waitingTime2: Room.waitingTime2,
-    enableOverwrite: Room.enableOverwrite
+    maxNumber: this.maxNumber,
+    count: this.count,
+  }
+}
+ROOM.GetConfGM = function(id) {
+  if (this.GM && this.GM != id)
+    return null
+  return {
+    waitingTime: this.waitingTime,
+    waitingTime2: this.waitingTime2,
+    enableOverwrite: this.enableOverwrite,
+    sendFake: this.sendFake,
+    doubleBlind: this.doubleBlind,
+    randomize: this.randomize,
+    enableOverwriteGM: this.enableOverwriteGM,
   }
 }
 
-function SendConf(Room) {
-  io.to(Room.room).emit('conf', { conf: GetConf(Room) })
+ROOM.SendConf = function() {
+  this.getSocketIds().forEach(id => io.to(id).emit('conf', { conf: this.GetConf(), confGM: this.GetConfGM(id) }))
 }
 
-function treatPacket(Room, node, sender) {
-  if (!node || (!Room.enableOverwrite && Room.stateTimeout))
+ROOM.treatPacket = function(node, sender) {
+  if (!node || (!this.enableOverwrite && this.stateTimeout))
     return
   let state = node.state
-  if (state != null && (state < -1 || state > Room.maxNumber))
+  if (state != null && (state < -1 || state > this.maxNumber))
     return
 
-  clearTimeout(Room.stateTimeout)
+  clearTimeout(this.stateTimeout)
 
   let bell = node.bell
   let delay = node.delay || 0
-  let packet = {}
+  let sendFake, statehtml, realState, realStatehtml
   if (state === -1)
-    state = Math.floor(Math.random()*Room.maxNumber)+1
+    state = Math.floor(Math.random()*this.maxNumber)+1
+  if (state)
+    sendFake = this.randomize ? Math.random() >= 0.5 : this.sendFake
+  if (state && sendFake) {
+    realState = state
+    state = Math.floor(Math.random()*this.maxNumber)+1
+  }
+  if (state && this.doubleBlind)
+      this.count++
   if (state != null)
-    packet.html = GenHTML(Room, state)
-  if (bell)
-    packet.bell = true
+    statehtml = this.GenHTML(state)
+  if (realState != null)
+    realStatehtml = this.GenHTML(realState)
 
-  if (!isEmpty(packet)) {
-    function exec() {
-      if (state != null)
-        Room.state = state
-      io.to(Room.room).emit('node', packet)
+  if (state != null || bell) {
+    let exec = () => {
+      if (state != null) 
+        this.state = state
+      this.getSocketIds().forEach(id => io.to(id).emit('node', { 
+        html: sendFake && id === sender ? realStatehtml : statehtml,
+        bell: bell ? true : false,
+        html3: sendFake && id === sender && !this.doubleBlind ? statehtml : hide,
+        count: this.sendFake && this.doubleBlind && id === sender ? this.count : hide,
+      }))
+      if (state && this.doubleBlind)
+        console.log('Essai:'+this.count, 'Real:'+this.GenString(realState), (sendFake ? 'Fake:'+this.GenString(state) : ''))
     }
     if (!delay)
       exec()
     else {
-      delay = delay == 1 ? Room.waitingTime : Room.waitingTime2
+      delay = delay == 1 ? this.waitingTime : this.waitingTime2
+
+      // packet confirm si delay
       let packet2 = { delay }
-      if (state != null && state != Room.state)
-        packet2.html = packet.html
+      //if (state != null && state != this.state)
+      //  packet2.html2 = packet.html
       io.to(sender).emit('node', packet2)
-      Room.stateTimeout = setTimeout(() => { exec()
-        Room.stateTimeout = null }, delay)
+
+      this.stateTimeout = setTimeout(() => { exec()
+        this.stateTimeout = null }, delay)
     }
   }
 }
@@ -139,31 +202,73 @@ io.on('connection', function (socket) {
 
   let Room = ROOMs[room]
   socket.join(room)
-  socket.emit('init', { html: GenHTML(Room), mode: GetMode(Room), conf: GetConf(Room) })
+  socket.emit('init', { html: Room.GenHTML(), mode: Room.GetMode(), conf: Room.GetConf(), confGM: Room.GetConfGM(socket.id) })
 
+  socket.on('disconnect', () => {
+    if (Room.GM && Room.GM === socket.id)
+      Room.SetGM(null)
+  })
   socket.on('packet', data => {
-    treatPacket(Room, data.now, socket.id)
-    treatPacket(Room, data.next, socket.id)
+    if (!Room.isGM(socket)) return
+    Room.treatPacket(data.now, socket.id)
+    Room.treatPacket(data.next, socket.id)
   })
   socket.on('mode', data => {
+    if (!Room.isGM(socket)) return
     if (data.mode > 0 && data.mode < 5)
-      SetMode(Room, data.mode)
+      Room.SetMode(data.mode)
   })
   socket.on('maxNumber', data => {
+    if (!Room.isGM(socket)) return
     Room.maxNumber = data.maxNumber
-    SendConf(Room)
+    Room.SendConf()
   })
   socket.on('waitingTime', data => {
+    if (!Room.isGM(socket)) return
     Room.waitingTime = data.waitingTime
-    SendConf(Room)
+    Room.SendConf()
   })
   socket.on('waitingTime2', data => {
+    if (!Room.isGM(socket)) return
     Room.waitingTime2 = data.waitingTime2
-    SendConf(Room)
+    Room.SendConf()
   })
   socket.on('enableOverwrite', data => {
+    if (!Room.isGM(socket)) return
     Room.enableOverwrite = data.enableOverwrite
-    SendConf(Room)
+    Room.SendConf()
+  })
+  socket.on('sendFake', data => {
+    if (!Room.isGM(socket)) return
+    Room.sendFake = data.sendFake
+    Room.SendConf()
+  })
+  socket.on('doubleBlind', data => {
+    if (!Room.isGM(socket)) return
+    Room.doubleBlind = data.doubleBlind
+    Room.SendConf()
+  })
+  socket.on('resetCount', () => {
+    if (!Room.isGM(socket)) return
+    Room.count = 0
+  })
+  socket.on('randomize', data => {
+    if (!Room.isGM(socket)) return
+    Room.randomize = data.randomize
+    Room.SendConf()
+  })
+  socket.on('enableOverwriteGM', data => {
+    if (!Room.isGM(socket)) return
+    Room.enableOverwriteGM = data.enableOverwriteGM
+    Room.SendConf()
+  })
+  socket.on('getGM', () => {
+    if (!Room.GM || (Room.GM !== socket.id && Room.enableOverwriteGM))
+      Room.SetGM(socket.id)
+  })
+  socket.on('dropGM', () => {
+    if (Room.GM && Room.GM === socket.id)
+      Room.SetGM(null)
   })
 })
 

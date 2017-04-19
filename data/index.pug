@@ -2,7 +2,7 @@ doctype html
 html
   head
     meta(charset='utf-8')
-    title telepathy-3000
+    title Telepathy 3000
     script(src='https://unpkg.com/babel-standalone@6.15.0/babel.min.js')
     script(src='https://unpkg.com/jquery@3.1.0/dist/jquery.min.js')
     script(src='https://unpkg.com/remarkable@1.6.2/dist/remarkable.min.js')
@@ -13,19 +13,28 @@ html
   body(style='height:100%; margin:0')
     #main
     #second
+    #third
+    #timeout
     #count
     #panel
       | MaxNumber 
-      input#input_maxNumber(,='', type='text')
+      input#input_maxNumber(type='text')
       button(onclick='SendMaxNumber()') Send
       | WaitingTime 
-      input#input_waitingTime(,='', type='text')
+      input#input_waitingTime(type='text')
       button(onclick='SendWaitingTime()') Send
       | WaitingTime2 
-      input#input_waitingTime2(,='', type='text')
+      input#input_waitingTime2(type='text')
       button(onclick='SendWaitingTime2()') Send
-      button#button_enableOverwrite(,='', onclick='ToggleEnableOverwrite()') ToggleEnableOverwrite
+      button#button_enableOverwrite(onclick='ToggleEnableOverwrite()') ToggleEnableOverwrite
+      button#button_sendFake(onclick='ToggleSendFake()') ToggleSendFake
+      button#button_doubleBlind(style='display:none', onclick='ToggleDoubleBlind()') ToggleDoubleBlind
+      button#button_resetCount(style='display:none', onclick='SendResetCount()') ResetCount
+      button#button_randomize(style='display:none', onclick='ToggleRandomize()') ToggleRandomize
+      button#button_enableOverwriteGM(onclick='ToggleEnableOverwriteGM()') ToggleEnableOverwriteGM
+      button#button_dropGM(style='display:none', onclick='SendDropGM()') DropGM
     #topright
+    #gmtag Admin
     audio#audioFile
       source(src=dataUrl+'/jingle.mp3', type='audio/mpeg')
     #ioPath(value=ioPath)
