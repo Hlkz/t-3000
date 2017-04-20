@@ -1,14 +1,11 @@
-let express = require('express')
+import express from 'express'
+import bodyParser from 'body-parser'
+import http from 'http'
+import path from 'path'
+import config from '../config/config'
+
 let app = express()
-let bodyParser = require('body-parser')
-let server = require('http').createServer(app)
-let path = require('path')
-let config = require('../config/config')
-
-let ROOM = {} // Room prototype
-let ROOMs = {} // Rooms by id
-let hide = 'hide'
-
+let server = http.createServer(app)
 const ROOT = __dirname+'/../'
 const SERVER_PORT = config.port
 const PATH_NAME = config.pathname
@@ -32,7 +29,9 @@ app.get(PATH_NAME, function(req, res) {
   res.redirect(PATH_NAME+'/')
 })
 
-function isEmpty(obj) { return Object.keys(obj).length === 0 && obj.constructor === Object }
+let ROOM = {} // Room prototype
+let ROOMs = {} // Rooms by id
+let hide = 'hide'
 
 function CreateRoom(room) {
   ROOMs[room] = {
