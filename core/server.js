@@ -144,9 +144,13 @@ ROOM.treatPacket = function(node, sender) {
 
   clearTimeout(this.stateTimeout)
 
-  let bell = node.bell
-  let bol = node.bol
+  let bell = node.bell ? true : false
+  let bol = node.bol ? true : false
   let delay = node.delay || 0
+
+  if (state === null && !bell && !bol && !delay)
+    return
+
   let sendFake, statehtml, realState, realStatehtml
   if (state === -1)
     state = Math.floor(Math.random()*this.maxNumber)+1
@@ -163,34 +167,26 @@ ROOM.treatPacket = function(node, sender) {
   if (realState != null)
     realStatehtml = this.GenHTML(realState)
 
-  if (true || state != null || bell || bol) {
-    let exec = () => {
-      if (state != null) 
-        this.state = state
-      this.getSocketIds().forEach(id => io.to(id).emit('node', { 
-        html: sendFake && id === sender ? realStatehtml : statehtml,
-        bell: bell ? true : false,
-        bol: bol ? true : false,
-        html3: state ? (sendFake && id === sender && !this.doubleBlind ? statehtml : hide) : 0,
-        count: state ? (this.sendFake && this.doubleBlind && id === sender ? this.count : hide) : 0,
-      }))
-      if (state && this.doubleBlind)
-        console.log('Essai:'+this.count, 'Real:'+this.GenString(realState), (sendFake ? 'Fake:'+this.GenString(state) : ''))
-    }
-    if (!delay)
-      exec()
-    else {
-      delay = delay == 1 ? this.waitingTime : this.waitingTime2
-
-      // packet confirm si delay
-      let packet2 = { delay }
-      //if (state != null && state != this.state)
-      //  packet2.html2 = packet.html
-      io.to(sender).emit('node', packet2)
-
-      this.stateTimeout = setTimeout(() => { exec()
-        this.stateTimeout = null }, delay)
-    }
+  let exec = () => {
+    if (state != null) 
+      this.state = state
+    this.getSocketIds().forEach(id => io.to(id).emit('node', { 
+      html: sendFake && id === sender ? realStatehtml : statehtml,
+      html3: state ? (sendFake && id === sender && !this.doubleBlind ? statehtml : hide) : 0,
+      count: state ? (this.sendFake && this.doubleBlind && id === sender ? this.count : hide) : (state === 0 ? hide : 0),
+      bell,
+      bol,
+    }))
+    if (state && this.doubleBlind)
+      console.log('Room:'+this.room, 'Essai:'+this.count, 'Real:'+this.GenString(realState), (sendFake ? 'Fake:'+this.GenString(state) : ''))
+  }
+  if (!delay)
+    exec()
+  else {
+    delay = delay == 1 ? this.waitingTime : this.waitingTime2
+    io.to(sender).emit('node', { delay })
+    this.stateTimeout = setTimeout(() => { exec()
+      this.stateTimeout = null }, delay)
   }
 }
 
@@ -243,6 +239,10 @@ io.on('connection', function (socket) {
   socket.on('sendFake', data => {
     if (!Room.isGM(socket)) return
     Room.sendFake = data.sendFake
+    if (!data.sendFake) {
+      Room.doubleBlind = false
+      Room.randomize = false
+    }
     Room.SendConf()
   })
   socket.on('doubleBlind', data => {
