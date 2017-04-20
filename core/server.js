@@ -163,7 +163,7 @@ ROOM.treatPacket = function(node, sender) {
   if (realState != null)
     realStatehtml = this.GenHTML(realState)
 
-  if (state != null || bell || bol) {
+  if (true || state != null || bell || bol) {
     let exec = () => {
       if (state != null) 
         this.state = state
