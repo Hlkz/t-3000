@@ -171,8 +171,8 @@ ROOM.treatPacket = function(node, sender) {
         html: sendFake && id === sender ? realStatehtml : statehtml,
         bell: bell ? true : false,
         bol: bol ? true : false,
-        html3: sendFake && id === sender && !this.doubleBlind ? statehtml : hide,
-        count: this.sendFake && this.doubleBlind && id === sender ? this.count : hide,
+        html3: state ? (sendFake && id === sender && !this.doubleBlind ? statehtml : hide) : 0,
+        count: state ? (this.sendFake && this.doubleBlind && id === sender ? this.count : hide) : 0,
       }))
       if (state && this.doubleBlind)
         console.log('Essai:'+this.count, 'Real:'+this.GenString(realState), (sendFake ? 'Fake:'+this.GenString(state) : ''))
